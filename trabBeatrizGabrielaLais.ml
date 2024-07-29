@@ -150,6 +150,50 @@ let rec typeinfer (tenv:tenv) (e:expr) : tipo =
       else raise (TypeError "tipo da funcao recursiva é diferente do declarado")
   | LetRec _ -> raise BugParser
 
+    (* TNothing *)
+  | Nothing t -> TyMaybe t
+
+    (* TJust *)
+  | Just e -> TyMaybe (typeinfer tenv e)
+
+    (* TMatchWithNothing *)
+  | MatchWithNothing(e,e1,x,e2) ->
+      (match typeinfer tenv e with
+         TyMaybe t' ->
+           let t1 = typeinfer tenv e1 in
+           let t2 = typeinfer ((x,t') :: tenv) e2
+           in if t1 = t2 then t1
+           else raise (TypeError "tipos diferentes em match")
+       | _ -> raise (TypeError "match espera tipo maybe"))
+
+    (* TNil *)
+  | Nil t -> TyList t
+
+    (* TList *)
+  | List(e1,e2) ->
+      let t1 = typeinfer tenv e1 in
+      let t2 = typeinfer tenv e2
+      in if t1 = t2 then TyList t1
+      else raise (TypeError "tipos diferentes em lista")
+
+    (* TMatchWithNil *)
+  | MatchWithNil(e,e1,x,xs,e2) ->
+      (match typeinfer tenv e with
+         TyList t' ->
+           let t1 = typeinfer tenv e1 in
+           let t2 = typeinfer ((x,t') :: (xs,TyList t') :: tenv) e2
+           in if t1 = t2 then t1
+           else raise (TypeError "tipos diferentes em match")
+       | _ -> raise (TypeError "match espera tipo lista"))
+
+    (* TPipe *)
+  | Pipe(e1,e2) ->
+      (match typeinfer tenv e2 with
+         TyFn(t1,t2) ->
+           let t = typeinfer tenv e1
+           in if t = t1 then t2
+           else raise (TypeError "tipos diferentes em pipe")
+       | _ -> raise (TypeError "pipe espera função"))
                   
   
 (**+++++++++++++++++++++++++++++++++++++++++*)
@@ -230,7 +274,43 @@ let rec eval (renv:renv) (e:expr) :valor =
   | LetRec(f,TyFn(t1,t2),Fn(x,tx,e1), e2) when t1 = tx ->
       let renv'=  (f, VRClos(f,x,e1,renv)) :: renv
       in eval renv' e2
+
+  | Nothing t -> VNothing t
+
+  | Just e -> 
+      let v = eval renv e 
+      in VJust v
         
+  | MatchWithNothing(e,e1,x,e2) ->
+      let v' = eval renv e in
+      (match v' with
+         VNothing _ -> eval renv e1
+       | VJust v -> eval ((x,v) :: renv) e2
+       | _ -> raise BugTypeInfer)
+    
+  | Nil t -> VNil t
+
+  | List(e, e1) ->
+      let vh = eval renv e in
+      let vt = eval renv e1
+      in VList(vh,vt)
+  
+  | MatchWithNil(e,e1,x,xs,e2) ->
+      let v' = eval renv e in
+      (match v' with
+         VNil _ -> eval renv e1
+       | VList(vh,vt) -> eval ((x,vh) :: (xs,vt) :: renv) e2
+       | _ -> raise BugTypeInfer)
+
+  | Pipe(e1, e2) ->
+      let v' = eval renv e1 in
+      let v =  eval renv e2 in
+      (match v with
+         VClos(x, e, renv') ->
+           eval ((x, v') :: renv') e
+       | VRClos(f, x, e, renv') ->
+           eval ((f, v) :: (x, v') :: renv') e
+       | _ -> raise BugTypeInfer)
         
   | LetRec _ -> raise BugParser 
                   
@@ -243,6 +323,8 @@ let rec ttos (t:tipo) : string =
   | TyBool -> "bool"
   | TyFn(t1,t2)   ->  "("  ^ (ttos t1) ^ " --> " ^ (ttos t2) ^ ")"
   | TyPair(t1,t2) ->  "("  ^ (ttos t1) ^ " * "   ^ (ttos t2) ^ ")"
+  | TyMaybe t -> "maybe " ^ (ttos t)
+  | TyList t -> "list " ^ (ttos t)
 
 (* função auxiliar que converte valor para string *)
 
@@ -255,6 +337,11 @@ let rec vtos (v: valor) : string =
       "(" ^ vtos v1 ^ "," ^ vtos v1 ^ ")"
   | VClos _ ->  "fn"
   | VRClos _ -> "fn"
+  | VNothing _ -> "nothing"
+  | VJust v -> "just " ^ vtos v
+  | VNil _ -> "nil"
+  | VList(vh, vt) -> vtos vh ^ " :: " ^ vtos vt
+  
 
 (* principal do interpretador *)
 
