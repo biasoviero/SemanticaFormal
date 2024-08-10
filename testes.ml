@@ -131,3 +131,50 @@ let lookupExpr =
                             (Fn ("n", TyInt, Num 0))))))
   
 let _ = int_bse(lookupExpr)
+
+(*
+ let rec list_max: int list -> maybe int  = 
+fn l:int list =>
+  match l with 
+  | nil -> nothing
+  | h :: t -> (
+      match list_max t with
+      | noting -> just h
+      | just m -> just (if h >= m then h else m))
+let base_dados : (int) list =  [10, 20, 30, 40, 50] in
+match list_max base_dados with
+  nothing -> 0
+| just n -> n
+*)
+(*Esperado: maior número, 50*)
+let listMaxExpr = 
+  LetRec(
+    "list_max",
+    TyFn(TyList (TyInt), TyMaybe(TyInt)),
+    Fn("l", TyList(TyInt),
+       MatchWithNil(Var "l", Nothing(TyInt), "h", "t",
+                    MatchWithNothing(App(Var "list_max", Var "t"),
+                                     Just(Var "h"),
+                                     "m",
+                                     Just(
+                                       If (Binop (Geq, Var "h", Var "m"),
+                                           Var "h",
+                                           Var "m"))))),
+    Let
+      ("base_dados",
+       TyList(TyInt),
+       Cons(Num 10,
+            Cons(Num 50,
+                 Cons(Num 30,
+                      Cons(Num 40,
+                           Cons(Num 50, Nil(TyInt)))))),
+       MatchWithNothing(
+         App(Var "list_max", Var "base_dados"),
+         Num 0,
+         "n",
+         Var "n"
+       )
+      )
+  )
+    
+let _ = int_bse(listMaxExpr)
