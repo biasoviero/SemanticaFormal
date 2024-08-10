@@ -116,11 +116,11 @@ let lookupExpr =
      Let
        ("base_dados",
         TyList(TyPair(TyInt, TyInt)),
-        Cons(Pair(Num 1, Num 10),
-             Cons(Pair(Num 2, Num 20),
-                  Cons(Pair(Num 3, Num 30),
-                       Cons(Pair(Num 4, Num 40),
-                            Cons(Pair(Num 5, Num 50), Nil(TyPair(TyInt, TyInt))))))),
+        List(Pair(Num 1, Num 10),
+             List(Pair(Num 2, Num 20),
+                  List(Pair(Num 3, Num 30),
+                       List(Pair(Num 4, Num 40),
+                            List(Pair(Num 5, Num 50), Nil(TyPair(TyInt, TyInt))))))),
         Let
           ("key",
            TyInt,
@@ -163,11 +163,11 @@ let listMaxExpr =
     Let
       ("base_dados",
        TyList(TyInt),
-       Cons(Num 10,
-            Cons(Num 50,
-                 Cons(Num 30,
-                      Cons(Num 40,
-                           Cons(Num 50, Nil(TyInt)))))),
+       List(Num 10,
+            List(Num 50,
+                 List(Num 30,
+                      List(Num 40,
+                           List(Num 50, Nil(TyInt)))))),
        MatchWithNothing(
          App(Var "list_max", Var "base_dados"),
          Num 0,
