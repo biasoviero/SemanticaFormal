@@ -172,11 +172,12 @@ let rec typeinfer (tenv:tenv) (e:expr) : tipo =
     (* TList *)
   | List(e1,e2) ->
       let t1 = typeinfer tenv e1 in
-      let t2 = typeinfer tenv e2
-      in if t1 = t2 then TyList t1
-      else raise (TypeError "tipos diferentes em lista")
-
-    (* TMatchWithNil *)
+      let t2 = typeinfer tenv e2 in
+      (match t2 with
+         TyList t' when t1 = t' -> TyList t1
+       | _ -> raise (TypeError "tipos diferentes em lista"))
+          
+  (* TMatchWithNil *)
   | MatchWithNil(e,e1,x,xs,e2) ->
       (match typeinfer tenv e with
          TyList t' ->
@@ -186,7 +187,7 @@ let rec typeinfer (tenv:tenv) (e:expr) : tipo =
            else raise (TypeError "tipos diferentes em match")
        | _ -> raise (TypeError "match espera tipo lista"))
 
-    (* TPipe *)
+  (* TPipe *)
   | Pipe(e1,e2) ->
       (match typeinfer tenv e2 with
          TyFn(t1,t2) ->
@@ -354,4 +355,3 @@ let int_bse (e:expr) : unit =
     TypeError msg ->  print_string ("erro de tipo - " ^ msg) 
   | BugTypeInfer  ->  print_string "corrigir bug em typeinfer"
   | BugParser     ->  print_string "corrigir bug no parser para let rec"
-                        
