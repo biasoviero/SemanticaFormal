@@ -73,3 +73,61 @@ let test_maybe_type () =
 (* Executa o teste *)
 let () = test_maybe_type ()
 
+
+(*(fn x:int => (fn y:int => x+y)) 12 4 *) (* Esperado: 16 : int *)
+let soma = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Num 12)), Num 4)) 
+  
+                                             
+  (*(fn x:bool => (fn y:int => x+y)) true 4 *) (* Esperado: erro de tipo *)
+let somaErro = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Bool true)), Num 4))
+    
+    
+(*(fn x:int => (fn y:int => x+y))*)     (* Esperado: (int --> (int --> int))*)
+let somaFuncao = int_bse (Fn("x", TyInt, Fn("y", TyInt, Binop(Sum, Var "x", Var "y"))))
+    
+(*
+let rec lookup: int -> (int * int) list -> maybe in  = 
+  fn k:int => fn l: (int*int) list =>
+    match l with 
+      nil      -> nothing 
+    | x :: xs -> if (fst x) = k 
+        then just (snd x)
+        else lookup k xs  in 
+
+let base_dados : (int * int) list =  [(1,10), (2,20), (3,30), (4,40), (5,50)] in
+
+let key:int = 3 in 
+
+match lookup key base_dados with
+  noting -> 0
+| just n -> n
+   *)
+  
+let lookupExpr = 
+  LetRec
+    ("lookup",
+     TyFn(TyInt, TyFn(TyList(TyPair(TyInt,TyInt)), TyMaybe(TyInt))),
+     Fn("k", TyInt,
+        Fn("l", TyList(TyPair(TyInt, TyInt)),
+           MatchWithNil(Var "l", Nothing(TyInt), "x", "xs",
+                        If (Binop (Eq, Fst(Var "x"), Var "k"),
+                            Just (Snd (Var "x")),
+                            App(App(Var "lookup", Var "k"), Var "xs"))))),
+     Let
+       ("base_dados",
+        TyList(TyPair(TyInt, TyInt)),
+        Cons(Pair(Num 1, Num 10),
+             Cons(Pair(Num 2, Num 20),
+                  Cons(Pair(Num 3, Num 30),
+                       Cons(Pair(Num 4, Num 40),
+                            Cons(Pair(Num 5, Num 50), Nil(TyPair(TyInt, TyInt))))))),
+        Let
+          ("key",
+           TyInt,
+           Num 3,
+           MatchWithNothing(App(App(Var "lookup", Var "key"), Var "base_dados"),
+                            Nothing(TyInt),
+                            "n",
+                            (Fn ("n", TyInt, Num 0))))))
+  
+let _ = int_bse(lookupExpr)
