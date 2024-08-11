@@ -3,12 +3,22 @@ Ou inserir no próprio cõdigo e ver os reusltados quando fizer Eval Code*)
 
 
 (* Teste de operações básicas *)
+let _ = int_bse (Var "x")  (* Esperado: erro de tipo - variavel nao declarada:x *)
 let _ = int_bse (Num 5)  (* Esperado: 5 : int *)
 let _ = int_bse (Bool true)  (* Esperado: true : bool *)
 let _ = int_bse (Binop (Sum, Num 5, Num 3))  (* Esperado: 8 : int *)
+let _ = int_bse (Binop (Eq, Num  7, Num 4))  (* Esperado:  false : bool *)
+let _ = int_bse (Binop (Lt, Bool true, Bool false))  (* Esperado: erro de tipo - operando nao é do tipo int *)
+let _ = int_bse (Pair (Num 5, Num 2))  (* Esperado: (5,2) : (int * int ) *)
+let _ = int_bse (Fst (Pair (Num 1, Num 3)))  (* Esperado: 1 : int *)
+let _ = int_bse (Fst (Num 1))  (* Esperado: erro de tipo - fst espera tipo par *)
+let _ = int_bse (Snd (Pair (Bool false, Bool true)))  (* Esperado: true : bool *)
+let _ = int_bse (Snd (Bool false))  (* Esperado: erro de tipo - snd espera tipo par *)
 
 (* Teste de condicional *)
 let _ = int_bse (If (Bool true, Num 10, Num 20))  (* Esperado: 10 : int *)
+let _ = int_bse (If (Num 0, Num 10, Num 20))  (* Esperado: erro de tipo - condição de IF não é do tipo bool *)
+let _ = int_bse (If (Bool true, Bool false, Num 20))  (* Esperado: erro de tipo - then/else com tipos diferentes *)
 
 (* Teste de função simples *)
 let _ = int_bse (App (Fn ("x", TyInt, Binop (Sum, Var "x", Num 1)), Num 5))  (* Esperado: 6 : int *)
@@ -26,6 +36,7 @@ let _ = int_bse (
 
 (* Teste de listas *)
 let _ = int_bse (List (Num 1, List (Num 2, Nil TyInt)))  (* Esperado: 1 :: 2 :: nil : list int *)
+let _ = int_bse (List (Num 1, List (Bool true, Nil TyBool)))  (* Esperado: erro de tipo - tipos diferentes em lista *)
 
 (* Teste para 'nothing' *)
 let _ = int_bse (Nothing TyInt)  (* Esperado: nothing : maybe int *)
@@ -39,6 +50,10 @@ let _ = int_bse (MatchWithNothing (Nothing TyInt, Num 0, "x", Var "x"))  (* Espe
 (* Teste de 'match' com 'just' *)
 let _ = int_bse (MatchWithNothing (Just (Num 5), Num 0, "x", Binop (Sum, Var "x", Num 1)))  (* Esperado: 6 : int *)
 
+(* Teste de 'match' com erros de tipo *)
+let _ = int_bse (MatchWithNothing (Num 1, Num 0, "x", Var "x"))  (* Esperado: erro de tipo - match espera tipo maybe *)
+let _ = int_bse (MatchWithNothing (Nothing TyInt, Num 0, "x", Bool false))  (* Esperado: erro de tipo - tipos diferentes em match *)
+
 (* Teste para 'nil' *)
 let _ = int_bse (Nil TyInt)  (* Esperado: nil : list int *)
 
@@ -51,11 +66,19 @@ let _ = int_bse (MatchWithNil (Nil TyInt, Num 0, "x", "xs", Var "x"))  (* Espera
 (* Teste de 'match' com lista não vazia *)
 let _ = int_bse (MatchWithNil (List (Num 1, Nil TyInt), Num 0, "x", "xs", Binop (Sum, Var "x", Num 1)))  (* Esperado: 2 : int *)
 
+(* Teste de 'match' com erros de tipo *)
+let _ = int_bse (MatchWithNil (Nothing TyInt, Num 0, "x", "xs", Var "x"))  (* Esperado: erro de tipo - match espera tipo lista *)
+let _ = int_bse (MatchWithNil (List (Num 1, Nil TyInt), Num 0, "x", "xs", Bool true))  (* Esperado: erro de tipo - tipos diferentes em match *)
+
 (* Teste de 'pipe' com função de incremento *)
 let _ = int_bse (Pipe (Num 1, Fn ("x", TyInt, Binop (Sum, Var "x", Num 1))))  (* Esperado: 2 : int *)
 
 (* Teste de 'pipe' com função de duplicação *)
 let _ = int_bse (Pipe (Num 2, Fn ("x", TyInt, Binop (Mult, Var "x", Num 2))))  (* Esperado: 4 : int *)
+
+(* Teste de 'pipe' com erros de tipo *)
+let _ = int_bse (Pipe (Num 2, Binop (Mult, Num 3, Num 2)))  (* Esperado: erro de tipo - pipe espera função *)
+let _ = int_bse (Pipe (Bool false, Fn ("x", TyInt, Binop (Sum, Var "x", Num 1))))  (* Esperado: erro de tipo - tipos diferentes em pipe *)
 
 (* Teste para tipo Maybe *)
 let test_maybe_type () =

@@ -335,7 +335,7 @@ let rec vtos (v: valor) : string =
   | VBool true -> "true"
   | VBool false -> "false"
   | VPair(v1, v2) ->
-      "(" ^ vtos v1 ^ "," ^ vtos v1 ^ ")"
+      "(" ^ vtos v1 ^ "," ^ vtos v2 ^ ")"
   | VClos _ ->  "fn"
   | VRClos _ -> "fn"
   | VNothing _ -> "nothing"
