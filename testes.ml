@@ -125,7 +125,7 @@ match lookup key base_dados with
   noting -> 0
 | just n -> n
    *)
-  
+(* Esperado: 30 *)
 let lookupExpr = 
   LetRec
     ("lookup",
@@ -149,9 +149,9 @@ let lookupExpr =
            TyInt,
            Num 3,
            MatchWithNothing(App(App(Var "lookup", Var "key"), Var "base_dados"),
-                            Nothing(TyInt),
+                            Num 0,
                             "n",
-                            (Fn ("n", TyInt, Num 0))))))
+                            Var "n"))))
   
 let _ = int_bse(lookupExpr)
 
