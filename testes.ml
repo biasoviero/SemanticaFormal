@@ -17,11 +17,25 @@ let _ = int_bse (Snd (Bool false))  (* Esperado: erro de tipo - snd espera tipo 
 
 (* Teste de condicional *)
 let _ = int_bse (If (Bool true, Num 10, Num 20))  (* Esperado: 10 : int *)
+let _ = int_bse (If (Bool false, Num 10, Num 20))  (* Esperado: 20 : int *)
 let _ = int_bse (If (Num 0, Num 10, Num 20))  (* Esperado: erro de tipo - condição de IF não é do tipo bool *)
 let _ = int_bse (If (Bool true, Bool false, Num 20))  (* Esperado: erro de tipo - then/else com tipos diferentes *)
 
-(* Teste de função simples *)
+(* Teste de função *)
+let _ = int_bse (Fn ("x", TyInt, Binop (Sum, Var "x", Num 1)))  (* Esperado: int --> int *)
+let _ = int_bse (Fn ("x", TyInt, Binop (Lt, Var "x", Num 1)))  (* Esperado: int --> bool *)    
+let _ = int_bse (Fn("x", TyInt, Fn("y", TyInt, Binop(Sum, Var "x", Var "y")))) (*(fn x:int => (fn y:int => x+y))*)  (* Esperado: (int --> (int --> int))*)
+
+(* Teste de aplicação *)
 let _ = int_bse (App (Fn ("x", TyInt, Binop (Sum, Var "x", Num 1)), Num 5))  (* Esperado: 6 : int *)
+let _ = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Num 12)), Num 4)) (*(fn x:int => (fn y:int => x+y)) 12 4 *) (* Esperado: 16 : int *)
+let _ = int_bse (App (Bool false, Bool true)) (* Esperado: erro de tipo - tipo função era esperado *)
+let _ = int_bse (App (Fn ("x", TyInt, Binop (Lt, Var "x", Num 1)), Bool true)) (* Esperado: erro de tipo - tipo argumento errado *)
+let _ = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Bool true)), Num 4)) (*(fn x:bool => (fn y:int => x+y)) true 4 *) (* Esperado: erro de tipo - tipo argumento errado*)
+
+(* Teste de let *)
+let _ = int_bse (Let ("x", TyInt, Num 10, Binop (Sum, Var "x", Num 20))) (* Esperado: 30 : int *)
+let _ = int_bse (Let ("x", TyInt, Bool true, Binop (Sum, Var "x", Num 20))) (* Esperado: erro de tipo - expressão não é do tipo declarado em Let *)
 
 (* Teste de let rec para função recursiva *)
 let _ = int_bse (
@@ -34,9 +48,27 @@ let _ = int_bse (
   )
 )  (* Esperado: 120 : int *)
 
-(* Teste de listas *)
-let _ = int_bse (List (Num 1, List (Num 2, Nil TyInt)))  (* Esperado: 1 :: 2 :: nil : list int *)
-let _ = int_bse (List (Num 1, List (Bool true, Nil TyBool)))  (* Esperado: erro de tipo - tipos diferentes em lista *)
+let _ = int_bse (
+  LetRec ("e_par", TyFn (TyInt, TyBool),
+    Fn ("n", TyInt,
+      If (Binop (Eq, Var "n", Num 0), 
+          Bool true,
+          If (Binop (Eq, Var "n", Num 1), 
+            Bool false,
+            App (Var "e_par", Binop (Sub, Var "n", Num 2))))),
+    App (Var "e_par", Num 4)
+  )
+) (* Esperado: true : bool *)
+
+let _ = int_bse (
+  LetRec ("fact", TyFn (TyInt, TyInt),
+    Fn ("n", TyInt,
+      If (Binop (Eq, Var "n", Num 0), 
+        Bool true, 
+        Bool false)),
+    App (Var "fact", Num 5)
+  )
+) (* Esperado: erro de tipo - tipo da função recursiva é diferente do declarado *) 
 
 (* Teste para 'nothing' *)
 let _ = int_bse (Nothing TyInt)  (* Esperado: nothing : maybe int *)
@@ -57,8 +89,10 @@ let _ = int_bse (MatchWithNothing (Nothing TyInt, Num 0, "x", Bool false))  (* E
 (* Teste para 'nil' *)
 let _ = int_bse (Nil TyInt)  (* Esperado: nil : list int *)
 
-(* Teste de construção de lista com '::' *)
+(* Teste de listas *)
 let _ = int_bse (List (Num 1, Nil TyInt))  (* Esperado: 1 :: nil : list int *)
+let _ = int_bse (List (Num 1, List (Num 2, Nil TyInt)))  (* Esperado: 1 :: 2 :: nil : list int *)
+let _ = int_bse (List (Num 1, List (Bool true, Nil TyBool)))  (* Esperado: erro de tipo - tipos diferentes em lista *)
 
 (* Teste de 'match' com lista vazia *)
 let _ = int_bse (MatchWithNil (Nil TyInt, Num 0, "x", "xs", Var "x"))  (* Esperado: 0 : int *)
@@ -95,18 +129,6 @@ let test_maybe_type () =
 
 (* Executa o teste *)
 let () = test_maybe_type ()
-
-
-(*(fn x:int => (fn y:int => x+y)) 12 4 *) (* Esperado: 16 : int *)
-let soma = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Num 12)), Num 4)) 
-  
-                                             
-  (*(fn x:bool => (fn y:int => x+y)) true 4 *) (* Esperado: erro de tipo *)
-let somaErro = int_bse (App(Fn("x", TyInt, App(Fn("y", TyInt, Binop(Sum, Var "x", Var "y")), Bool true)), Num 4))
-    
-    
-(*(fn x:int => (fn y:int => x+y))*)     (* Esperado: (int --> (int --> int))*)
-let somaFuncao = int_bse (Fn("x", TyInt, Fn("y", TyInt, Binop(Sum, Var "x", Var "y"))))
     
 (*
 let rec lookup: int -> (int * int) list -> maybe in  = 
