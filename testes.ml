@@ -223,3 +223,21 @@ let listMaxExpr =
   )
     
 let _ = int_bse(listMaxExpr)
+
+(*
+let incr : int -> int = fn x:int => x +1 in
+let dobro : int -> int = fn x:int => 2 * x in
+let triplo : int -> int = fn x:int => 3 * x in
+5 |> dobro |> triplo |> incr   
+   *)
+(*Esperado 31 : int*)
+let teste_pipe= 
+  Let ("incr", TyFn (TyInt, TyInt), 
+       Fn ("x", TyInt, Binop (Sum, Var "x", Num 1)),
+       Let ("dobro", TyFn (TyInt, TyInt), 
+            Fn ("x", TyInt, Binop (Mult, Num 2, Var "x")),
+            Let ("triplo", TyFn (TyInt, TyInt), 
+                 Fn ("x", TyInt, Binop (Mult, Num 3, Var "x")),
+                 Pipe (Pipe (Pipe (Num 5, Var "dobro"), Var "triplo"), Var "incr"))))
+let _ = int_bse(teste_pipe)
+
